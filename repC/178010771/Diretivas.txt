@@ -1,0 +1,33 @@
+// retorna o identificador da thread.
+int omp_get_thread_num();
+// indica o número de threads a executar na região paralela.
+void omp_set_num_threads(int num_threads);
+// retorna o número de threads que estão executando no momento.
+int omp_get_num_threads();
+
+// Cria a região paralela. Define variáveis privadas e
+compartilhadas entre as threads.
+#pragma omp parallel private(...) shared(...)
+{ // Obrigatoriamente na linha de baixo.
+// Apenas a thread mais rápida executa.
+#pragma omp single
+}
+
+
+FirstPrivate - As variaveis serão inicializadas com o valor da variavel compartilhada. Cada thread terá sua propria cópia da variavel com o valor inicial.
+
+LastPrivate - As variveis compartilhadas serão atualizadas com o valor da variavel que executar a ultima iteração
+
+DIRETIVA DEFAULT
+Note que o atributo padrão é DEFAULT(SHARED) (logo, não
+precisamos usar isso)
+ Exceção: #pragma omp task
+DEFAULT(PRIVATE)
+ Cada variável na construção será feita privada como se estivesse sido declaradas
+como private(vars)
+DEFAULT(NONE): nenhum padrão será assumido. Deverá ser fornecida
+uma lista de variáveis privadas e compartilhadas. Boa prática de
+programação
+
+
+

@@ -1,0 +1,44 @@
+Introduction
+
+This project involves a rumble between static scheduling vs. dynamic, and coarse-grained parallelism vs. fine-grained.
+
+The problem that we are solving is an "N-Body Problem", in which a group of planetary masses are swarming around by being mutually attracted to each other. As all bodies are attracted to all other bodies, this is potentiially an O(N2) problem, and thus would be ripe for parallelism.
+
+Requirements
+
+Use OpenMP for this. Use 100 bodies. Take 200 time steps.
+Use a variety of different numbers of threads. At least use 1, 2, and 4. You can also use more if you'd like.
+In the code below, "coarse-grained parallelism" means putting the OpenMP #pragma omp parallel forbefore the i for-loop. "fine-grained parallelism" means putting it before the j for-loop.
+When you do the fine-grained parallelism, don't forget that the variables fx, fy, fzneed to undergo a reduction-add.
+You can control static vs. dynamic scheduling by adding a clause to the end of the #pragma omp parallel for. Use either schedule(static)or schedule(dynamic).
+Don't worry about the scheduling chunksize. Let it default to 1. Joe Parallel tried a few combinations and it didn't seem to make any difference.
+Record the data in units of something that gets larger as speed increases. Joe Parallel used "MegaBodies Compared Per Second" ((float)(NUMBODIES*NUMBODIES*NUMSTEPS)/(time1-time0)/1000000.), but you can use anything that makes sense.
+Your commentary write-up (turned in as a PDF file) should include:
+Tell what machine you ran this on
+Create a table with your results.
+Draw a graph. The X axis will be the number of threads. The Y axis will be the performance in whatever units you sensibly choose. On the same graph, plot 4 curves:
+coarse+static
+coarse+dynamic
+fine+static
+fine+dynamic
+What patterns are you seeing in the speeds?
+Why do you think it is behaving this way?
+
+What I need to do:
+Implement fine and coarse grained parallelism
+	-In the code below, "coarse-grained parallelism" means putting the OpenMP 
+	#pragma omp parallel forbefore the i for-loop. 
+	"fine-grained parallelism" means putting it before the j for-loop.
+	
+Implement with static and dynamic 
+	-You can control static vs. dynamic scheduling by adding a clause to the end of the 
+	#pragma omp parallel for. 
+	Use either schedule(static)or schedule(dynamic).
+	
+Try these with 1, 2, and 4 threads
+
+Combinations:
+Coarse grained with static control and all threads
+Coarse grained with dynamic control and all threads
+Fine grained with static control and all threads
+Fine grained with static control and all threads

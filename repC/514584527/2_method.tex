@@ -1,0 +1,86 @@
+%   +-----------------+
+%   |   METHODOLOGY   |
+%   +-----------------+
+\section{Methodology}\label{sec:method}
+The elements of the Mandelbrot set are computed by the recursive function \code{iterate} that follows:
+
+\begin{lstlisting}[language=C]
+int iterate( float cx, float cy )
+{
+  float x = 0.0f, y = 0.0f, xnew, ynew;
+  int it;
+  for ( it = 0; (it < MAXIT) && (x*x + y*y <= 2.0*2.0); it++ ) {
+    xnew = x*x - y*y + cx;
+    ynew = 2.0*x*y + cy;
+    x = xnew;
+    y = ynew;
+  }
+  return it;
+}
+\end{lstlisting}
+
+\noindent
+Calling such function has a highly variable computational cost that depends on the number of loop iterations that, in turn, depends on the values of \code{cx} and \code{cy}, and on the maximum number of iterations allowed (\code{MAXIT}). In \code{omp-mandelbrot.c}, the \code{iterate} function is called within a two-level nested loop that computes the Mandelbrot set for a 2-D array having 768 rows (\code{y\_size}) and 1024 columns (\code{x\_size}), while the maximum number of iterations is set to 10000.
+
+For the studies of this project, a new set of scripts\footnote{All scripts, data and images produced for this project are available at \href{https://github.com/mbarbetti/ppf-omp-project}{\code{mbarbetti/ppf-omp-project}}.} has been prepared, starting from a new source code, named \code{my-mandelbrot.c}. The main difference with respect to \code{omp-mandelbrot.c} is the memory allocation to store the elements of the Mandelbrot set, in order to export them for graphical visualization (see Figure~\ref{fig:mandelbrot}). 
+
+\begin{figure}[b!]
+    \centering
+    \includegraphics[width=0.75\textwidth]{mandelbrot.png}
+    \caption{\label{fig:mandelbrot}
+    The Mandelbrot set (black) within a continuously colored environment.
+    }
+\end{figure}
+
+The program is parallelized using a set of OpenMP APIs that wraps the nested loop as shown in the following:
+
+\newpage
+
+\begin{lstlisting}[language=C]
+  // [...]
+#pragma omp parallel for private(x) schedule(runtime)
+  for ( y = 0; y < y_size; y++ ) {
+    for ( x = 0; x < x_size; x++ ) {
+      const double re = x_min + (x_max - x_min) * (float)(x) / (x_size - 1);
+      const double im = y_max - (y_max - y_min) * (float)(y) / (y_size - 1);
+      const int it = iterate(re, im);   // highly variable work
+#pragma omp critical
+	  if ( it < MAXIT ) {
+	    matrix[y*y_size + x] = it;   // saved for visualization
+      }
+    }
+  }
+  // [...]
+\end{lstlisting}
+
+\noindent
+The use of the \ompcode{omp for} directive and of a private scope for the \code{x} variable means that only the inner loop is parallelized and its work distributed across the threads assigned in the executing program by the \ompcode{omp parallel} directive. The time needed for completing the nested loop is measured (namely, the \emph{elapsed time}) and used for performance studies.
+
+In addition to the inner loop parallelization, a second script using the \ompcode{collapse(2)} clause has been prepared. It makes the \code{x} and \code{y} variables private by default and allows to distribute the work of the whole nested loop across the various threads reached by the \ompcode{omp parallel} directive.
+
+\begin{lstlisting}[language=C]
+  // [...]
+#pragma omp parallel for collapse(2) schedule(runtime)
+  // [...]
+\end{lstlisting}
+
+\noindent
+In the following parts of this document, the elapsed times needed to compute the Mandelbrot set parallelizing only the inner loop (with \code{my-mandelbrot.c}) or the whole nested loop (with \code{my-mandelbrot-collapse.c}) are reported for different types of scheduling and partition sizes. Moreover, the performance in weak and strong scaling conditions are discussed for both the parallelization strategies.
+
+%   < Machine >
+\subsection{Machine}\label{sec:machine}
+All the performance studies have been carried on a single machine equipped with an Intel Core i7-9750H~@~2.60 GHz and 6~CPU cores. The Mandelbrot programs (and each bash script) have been executed within the Docker image \code{ppf-shm05:latest}~\cite{classroom} through an Ubuntu~20.04 instance powered by WSL~2 \cite{wsl} on Windows~10.
+
+%   < Scheduling study >
+\subsection{Scheduling study}\label{sec:method-sched}
+The performance of both the Mandelbrot programs has been studied using different scheduling strategies. In particular, the scheduling types investigated have been the \code{static} and \code{dynamic} ones, while the scheduling chunksize has been varied from 1 to 256.  
+
+Two bash scripts have been prepared for this purpose, named \code{size-partition.sh} and \code{size-partition-collapse.sh}. The latters, taken the number of threads to use and the scheduling type at run-time, pass the information to the respective executable file through the environment variables \ompcode{OMP\_NUM\_THREADS} and \ompcode{OMP\_SCHEDULE}. The programs are then executed within a loop that assign various scheduling chunksize values at run-time. In order to obtain results more robust, each measurement of the elapsed time for a specific configuration is taken 20 times. The test has been repeated passing 2, 4, 6, 8, 10 and 12 threads to the bash scripts to study the behavior of the various scheduling strategies by varying the available computing processors.
+
+%   < Weak and strong scaling study >
+\subsection{Weak and strong scaling study}\label{sec:method-scale}
+Study the performance in weak scaling conditions corresponds to expand the input data size so that the work performed by each threads remains constant: $T_P = T_1$. Since the presence of a two-level nested loop, $O(m \times n)$, in order to satisfy these requirements the size of the Mandelbrot matrix (\code{y\_size}, \code{x\_size}) should increase by a factor $\sqrt{P}$ with $P$ the number of processors available. For this study, since the Mandelbrot matrix sizes are increased up to a factor 3.5 ($\sqrt{12} \simeq 3.5$), the initial values of \code{x\_size} and \code{y\_size} are set to 512 and 384 respectively.
+
+On the other hand, in strong scaling the input data size is kept constant so that the total work is constant. Then, what expected is that the work performed by each thread linearly decrease with the increasing of the number of processors available: $T_P = T_1 / P$. For this study, the initial values of \code{x\_size} and \code{y\_size} are kept constant to 1024 and 768 respectively. 
+
+Four bash scripts have been prepared for these studies, two based on the \code{my-mandelbrot.c} program named \code{weak-scaling.sh} and \code{strong-scaling.sh}, and two based on the \code{collapse} variant. All the bash scripts take the scheduling type and chunksize at run-time, and pass them to the respective executable file through \ompcode{OMP\_SCHEDULE}. The programs are then executed within a loop that assign a variable number of processors to \ompcode{OMP\_NUM\_THREADS}. Finally, in order to obtain results more robust, each measurement of the elapsed time for a specific configuration is taken 20 times. After a simple statistical treatment, the measurements are combined to derive the speedup values.

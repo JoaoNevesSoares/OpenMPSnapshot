@@ -1,0 +1,162 @@
+
+\documentclass[a4paper]{article}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%TCIDATA{OutputFilter=LATEX.DLL}
+%TCIDATA{Version=5.00.0.2552}
+%TCIDATA{<META NAME="SaveForMode" CONTENT="1">}
+%TCIDATA{Created=Wednesday, September 07, 2005 13:30:08}
+%TCIDATA{LastRevised=Sunday, February 12, 2006 14:24:14}
+%TCIDATA{<META NAME="GraphicsSave" CONTENT="32">}
+%TCIDATA{<META NAME="DocumentShell" CONTENT="Standard LaTeX\Blank - Standard LaTeX Article">}
+%TCIDATA{Language=American English}
+%TCIDATA{CSTFile=40 LaTeX article.cst}
+
+\setlength{\textheight}{8in}
+\setlength{\textwidth}{6in}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\evensidemargin}{0mm}
+\setlength{\marginparwidth}{0mm}
+\setlength{\marginparsep}{0mm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+\input{tcilatex}
+
+\begin{document}
+
+\title{OpenMP Implementation of Gauss Jordan}
+\date{}
+\author{Gabriel Dimitriu}
+\maketitle
+
+\section{Introduction}
+
+Let 
+\begin{equation}
+Ax=b  \label{s1}
+\end{equation}%
+be our system of linear equations, with $A=(a_{ij})_{i,j\in \{1,...,m\}}$, $%
+b=(b_{1},...,b_{m})$ and $x=(x_{1},...,x_{m})^{T}$.
+
+\begin{algorithm}
+Gauss-Jordan
+\end{algorithm}
+
+\begin{enumerate}
+\item procedure gauss\_jordan
+
+\item for k=0 to m do
+
+\item \qquad for i=k+1 to m do
+
+\item \qquad \qquad for j=k+1 to m do
+
+\item \qquad \qquad \qquad $a_{ij}=a_{ij}-a_{ik}\ast a_{kj}/a_{kk}$
+
+\item \qquad \qquad endfor
+
+\item \qquad \qquad $b_{i}=b_{i}-a_{ik}\ast b_{k}/a_{kk}$
+
+\item \qquad endfor
+
+\item \qquad for i=0 to k do
+
+\item \qquad \qquad for j=k+1 to m do
+
+\item \qquad \qquad \qquad $a_{ij}=a_{ij}-a_{ik}\ast a_{kj}/a_{kk}$
+
+\item \qquad \qquad endfor
+
+\item \qquad \qquad $b_{i}=b_{i}-a_{ik}\ast b_{k}/a_{kk}$
+
+\item \qquad endfor
+
+\item endfor
+
+\item for i=0 to m do
+
+\item \qquad $x_{i}=b_{i}/a_{ii}$
+
+\item endfor
+
+\item end procedure
+\end{enumerate}
+
+\section{OpenMP\ implementation}
+
+The lines form 3 to 9 are rewritten as  
+
+\begin{enumerate}
+\item for i=0 to m do
+
+\item \qquad if(i!=k)
+
+\item \qquad \qquad for j=k+1 to m do
+
+\item \qquad \qquad \qquad $a_{ij}=a_{ij}-a_{ik}\ast a_{kj}/a_{kk}$
+
+\item \qquad \qquad endfor
+
+\item \qquad \qquad $b_{i}=b_{i}-a_{ik}\ast b_{k}/a_{kk}$
+
+\item \qquad endif
+
+\item endfor
+\end{enumerate}
+
+And in front of them I put the following directive which distributed the
+iterations
+
+\begin{center}
+\#pragma omp parallel for private(j,temp)
+\end{center}
+
+We don't need syncronization because the iterrations are idependent.
+
+And the following directive in front of line 16
+
+\begin{center}
+\#pragma omp parallel for
+\end{center}
+
+\section{Results}
+
+I have compile the parallel program with two OpenMP compilers: Omni 1.6 and
+Intel C Compiler 8.0 for LINUX and the serial with gcc and Intel C Compiler
+8.0 for LINUX both with maximum optimization "-O3" and for Intel C Compiler
+I've put also "-mcpu=pentiumpro -tpp6" for maximum optimization.
+
+The executable were run on a dual pentium II at 500MHz with 256MB RAM and
+with LINUX\ Fedora Core 1 and we have the following results wchich are made
+for a average or 10 runs for serial and parallel programs and with red is
+plotted the results from ICC and with blue from Omni.
+
+\begin{center}
+\FRAME{itbpF}{3.3408in}{2.5098in}{0in}{}{}{Figure}{\special{language
+"Scientific Word";type "GRAPHIC";maintain-aspect-ratio TRUE;display
+"USEDEF";valid_file "T";width 3.3408in;height 2.5098in;depth
+0in;original-width 5.3756in;original-height 4.0315in;cropleft "0";croptop
+"1";cropright "1";cropbottom "0";tempfilename
+'omp_gj_icc_omni_2.bmp';tempfile-properties "XNPR";}}
+\end{center}
+
+\end{document}

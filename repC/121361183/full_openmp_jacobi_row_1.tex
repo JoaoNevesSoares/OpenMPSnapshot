@@ -1,0 +1,359 @@
+
+\documentclass[a4paper]{article}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{amsmath}
+
+\setcounter{MaxMatrixCols}{10}
+%TCIDATA{OutputFilter=LATEX.DLL}
+%TCIDATA{Version=5.00.0.2552}
+%TCIDATA{<META NAME="SaveForMode" CONTENT="1">}
+%TCIDATA{Created=Sunday, July 31, 2005 12:17:01}
+%TCIDATA{LastRevised=Monday, August 22, 2005 11:15:09}
+%TCIDATA{<META NAME="GraphicsSave" CONTENT="32">}
+%TCIDATA{<META NAME="DocumentShell" CONTENT="Standard LaTeX\Blank - Standard LaTeX Article">}
+%TCIDATA{Language=American English}
+%TCIDATA{CSTFile=40 LaTeX article.cst}
+
+\setlength{\textheight}{8in}
+\setlength{\textwidth}{6in}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\evensidemargin}{0mm}
+\setlength{\marginparwidth}{0mm}
+\setlength{\marginparsep}{0mm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\noindent\textbf{Proof} }{\ \rule{0.5em}{0.5em}}
+\input{tcilatex}
+
+\begin{document}
+
+\title{Full OpenMP implementation of Jacobi with dominant row}
+\date{}
+\author{}
+\maketitle
+
+\section{Introduction}
+
+Let 
+\begin{equation}
+Ax=a  \label{s1}
+\end{equation}
+be our system of linear equations, with $A=(a_{ij})_{i,j\in \{1,...,m\}}$, $%
+a=(a_{1},...,a_{m})$ and $x=(x_{1},...,x_{m})^{T}$.
+
+Suppose $a_{ii}\neq 0$ for any $i\in \{1,...,m\}$ then we can note $D=%
+\begin{pmatrix}
+a_{11} & 0 \\ 
+0 & a_{mm}%
+\end{pmatrix}%
+$ and $D^{-1}=%
+\begin{pmatrix}
+1/a_{11} & 0 \\ 
+0 & 1/a_{mm}%
+\end{pmatrix}%
+$.
+
+The system (\ref{s1}) could be transform in $D^{-1}Ax=D^{-1}a$ or%
+\begin{equation*}
+\left( I-\underset{B}{\left( \underbrace{I-D^{-1}A}\right) }\right) x=%
+\underset{b}{\underbrace{D^{-1}a}}
+\end{equation*}
+
+which is equivalent with%
+\begin{equation}
+(I-B)x=b  \label{s2}
+\end{equation}
+
+\begin{theorem}
+If 
+\begin{equation}
+\left\vert a_{ii}\right\vert >\sum_{j=1,j\neq i}^{m}\left\vert
+a_{ij}\right\vert ,\forall i\in \{1,...,m\}  \label{s3}
+\end{equation}%
+then the system (\ref{s2}) has the unique solution $z$ and $\forall
+x^{(0)}\in R^{m}$ the string $(x^{(n)})_{n\in N}$ with $x^{(n+1)}=Bx^{(n)}+b$
+convert to $z$ and it takes palaces the following relations: 
+\begin{equation}
+\left\Vert x^{(n)}-z\right\Vert _{\infty }\leq \frac{q}{1-q}\left\Vert
+x^{(n)}-x^{(n-1)}\right\Vert _{\infty }\leq \frac{q^{n}}{1-q}\left\Vert
+x^{(1)}-x^{(0)}\right\Vert _{\infty }  \label{s4}
+\end{equation}%
+where 
+\begin{equation*}
+q=\max_{1\leq i\leq m}\sum_{j=1,j\neq i}^{m}\left\vert \frac{a_{ij}}{a_{ii}}%
+\right\vert
+\end{equation*}
+\end{theorem}
+
+\section{Implementation in C}
+
+Where \ in conformity with system (\ref{s1})
+
+\begin{itemize}
+\item mat is \ matrix $A$ of coefficients
+
+\item ty is the free vector $a$
+
+\item tx is the solution $x$ of the system
+
+\item err is the error
+
+\item thread is the number of processors.
+\end{itemize}
+
+{\small void jacobi\_omp(double **mat,double *ty,double *tx,int dim,double
+err,int thread)}
+
+{\small \{}
+
+{\small double *xn\_1;}
+
+{\small long i,j;}
+
+{\small int th;}
+
+{\small double q,sum,temp;}
+
+{\small double *sum\_p;}
+
+{\small \qquad xn\_1=(double *)calloc(dim,sizeof(double));}
+
+{\small \qquad sum\_p=(double *)calloc(thread,sizeof(double));}
+
+{\small //JACOBI}
+
+{\small \qquad q=0.0;}
+
+{\small \qquad omp\_set\_num\_threads(thread);}
+
+{\small \qquad \#pragma omp parallel private(th,i)}
+
+{\small \qquad \{}
+
+{\small \qquad \qquad \#pragma omp for}
+
+{\small \qquad \qquad \qquad for(i=0;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \qquad \qquad \qquad tx[i]=ty[i]/mat[i][i];}
+
+{\small \qquad \qquad //compute q}
+
+{\small \qquad \qquad \#pragma omp for reduction(+:q)}
+
+{\small \qquad \qquad \qquad for(i=1;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \qquad \qquad \qquad q+=fabs(mat[0][i]/mat[0][0]);}
+
+{\small \qquad \qquad th=omp\_get\_thread\_num();}
+
+{\small \qquad \qquad sum\_p[th]=q;}
+
+{\small \qquad \qquad \#pragma omp for private(temp,j)}
+
+{\small \qquad \qquad for(i=1;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad temp=0.0;}
+
+{\small \qquad \qquad \qquad for(j=0;j\TEXTsymbol{<}dim;j++)}
+
+{\small \qquad \qquad \qquad \qquad if(i!=j) temp+=fabs(mat[i][j]/mat[i][i]);%
+}
+
+{\small \qquad \qquad \qquad if(sum\_p[th]\TEXTsymbol{<}temp)
+sum\_p[th]=temp;}
+
+{\small \qquad \qquad \}}
+
+{\small \qquad \qquad \#pragma omp single}
+
+{\small \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad q=sum\_p[0];}
+
+{\small \qquad \qquad \qquad for(i=1;i\TEXTsymbol{<}thread;i++)}
+
+{\small \qquad \qquad \qquad \qquad if(q\TEXTsymbol{<}sum\_p[i])}
+
+{\small \qquad \qquad \qquad \qquad \qquad q=sum\_p[i];}
+
+{\small \qquad \qquad \}}
+
+{\small \qquad \qquad sum\_p[th]=fabs(ty[th]/mat[th][th]);}
+
+{\small \qquad \qquad for(i=th+thread;i\TEXTsymbol{<}dim;i=i+thread)}
+
+{\small \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad if(sum\_p[th]\TEXTsymbol{<}%
+fabs(ty[i]/mat[i][i]))}
+
+{\small \qquad \qquad \qquad \qquad \qquad sum\_p[th]=fabs(ty[i]/mat[i][i]);}
+
+{\small \qquad \qquad \}}
+
+{\small \qquad \qquad \#pragma omp barrier}
+
+{\small \qquad \qquad \#pragma omp single}
+
+{\small \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad sum=sum\_p[0];}
+
+{\small \qquad \qquad \qquad for(i=1;i\TEXTsymbol{<}thread;i++) }
+
+\qquad \qquad \qquad {\small if(sum\TEXTsymbol{<}sum\_p[i]) sum=sum\_p[i];}
+
+{\small \qquad \qquad \qquad sum=sum*q/(1-q);}
+
+{\small \qquad \qquad \}}
+
+{\small \qquad \qquad while(fabs(sum)\TEXTsymbol{>}err)}
+
+{\small \qquad \qquad \{\qquad }
+
+{\small \qquad \qquad \qquad \#pragma omp for}
+
+{\small \qquad \qquad \qquad \qquad for(i=0;i\TEXTsymbol{<}dim;i++)
+xn\_1[i]=tx[i];}
+
+{\small \qquad \qquad \qquad \#pragma omp for private(j)}
+
+{\small \qquad \qquad \qquad \qquad for(i=0;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \qquad \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad \qquad \qquad tx[i]=ty[i]/mat[i][i];}
+
+{\small \qquad \qquad \qquad \qquad \qquad for(j=0;j\TEXTsymbol{<}dim;j++)}
+
+\qquad \qquad \qquad \qquad \qquad {\small if(j!=i)
+tx[i]-=mat[i][j]/mat[i][i]*xn\_1[j];}
+
+{\small \qquad \qquad \qquad \qquad \}}
+
+{\small \qquad \qquad \qquad sum\_p[th]=fabs(tx[th]-xn\_1[th]);}
+
+{\small \qquad \qquad \qquad for(i=th+thread;i\TEXTsymbol{<}dim;i=i+thread)}
+
+{\small \qquad \qquad \qquad \qquad if(sum\_p[th]\TEXTsymbol{<}%
+fabs(tx[i]-xn\_1[i])) sum\_p[th]=fabs(tx[i]-xn\_1[i]);}
+
+{\small \qquad \qquad \qquad \#pragma omp barrier}
+
+{\small \qquad \qquad \qquad \#pragma omp single}
+
+{\small \qquad \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad \qquad sum=sum\_p[0];}
+
+{\small \qquad \qquad \qquad \qquad for(i=1;i\TEXTsymbol{<}thread;i++)}
+
+{\small \qquad \qquad \qquad \qquad \qquad if(sum\TEXTsymbol{<}sum\_p[i])
+sum=sum\_p[i];}
+
+{\small \qquad \qquad \qquad \qquad sum=sum*q/(1-q);}
+
+{\small \qquad \qquad \qquad \}}
+
+{\small \qquad \qquad \}}
+
+{\small \qquad \}}
+
+{\small \qquad free(xn\_1);}
+
+{\small \}}
+
+Because I want to have a random solution but also to can verified the
+solution and the system to be compatible with systems solved by Jacobi with
+row dominant I use the following generator which will assure me that I have
+the following solution rez=(1,2,...,m) for a m dimensional problem.
+
+{\small \qquad for(i=0;i\TEXTsymbol{<}dim;i++) rez[i]=(double)i+1;}
+
+{\small \qquad for(i=0;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \qquad for(j=0;j\TEXTsymbol{<}dim;j++) if(i!=j)}
+
+{\small \qquad \qquad \qquad \{}
+
+{\small \qquad \qquad \qquad \qquad mat[i][j]=20000*rand()/(double)RAND\_MAX;%
+}
+
+{\small \qquad \qquad \qquad \qquad if((rand()/(double)RAND\_MAX)\TEXTsymbol{%
+<}0.5) mat[i][j]=-mat[i][j];}
+
+{\small \qquad \qquad \qquad \}}
+
+{\small \qquad for(i=0;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \{}
+
+{\small \qquad \qquad temp=0.0;}
+
+{\small \qquad \qquad for(j=0;j\TEXTsymbol{<}dim;j++) if(j!=i)
+temp+=fabs(mat[i][j]);}
+
+{\small \qquad \qquad
+mat[i][i]=temp+(20000+temp)*rand()/(double)RAND\_MAX+0.00001;}
+
+{\small \qquad \qquad if((rand()/(double)RAND\_MAX)\TEXTsymbol{<}0.5)
+mat[i][i]=-mat[i][i];}
+
+{\small \qquad \}}
+
+{\small \qquad for(i=0;i\TEXTsymbol{<}dim;i++)}
+
+{\small \qquad \{}
+
+{\small \qquad \qquad y[i]=0.0; x[i]=0.0;}
+
+{\small \qquad \qquad for(j=0;j\TEXTsymbol{<}dim;j++) y[i]+=mat[i][j]*rez[j];%
+}
+
+{\small \qquad \}}
+
+\section{Results}
+
+I have compile the parallel program with two openMP compilers: Omni 1.6 and
+Intel C Compiler 8.0 for LINUX and the serial with gcc and Intel C Compiler
+8.0 for LINUX both with maximum optimization "-O3" and for Intel C Compiler
+I've put also "-mcpu=pentiumpro -tpp6" for maximum optimization.
+
+The executable were run on a dual pentium II at 500MHz with 256MB RAM and
+with LINUX\ Fedora Core 1.
+
+The following results were made for a average or 10 runs for serial and
+parallel programs and with red is plotted the results from ICC and with blue
+the results from Omni.
+
+\begin{center}
+\FRAME{itbpF}{4.7488in}{3.5683in}{0in}{}{}{Figure}{\special{language
+"Scientific Word";type "GRAPHIC";maintain-aspect-ratio TRUE;display
+"USEDEF";valid_file "T";width 4.7488in;height 3.5683in;depth
+0in;original-width 5.3756in;original-height 4.0315in;cropleft "0";croptop
+"1";cropright "1";cropbottom "0";tempfilename
+'full_openmp_jacobi_row.bmp';tempfile-properties "XNPR";}}
+\end{center}
+
+\end{document}

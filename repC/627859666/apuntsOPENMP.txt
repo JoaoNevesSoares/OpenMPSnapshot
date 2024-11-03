@@ -1,0 +1,51 @@
+
+
+
+Directives:
+(PRAGMA ESPECIFICA OPCIONS AL COMPILADOR)
+
+-pragma omp parallel (cada un dels n threads executa el mateix programa)
+-pragma omp single   (cada un dels n threads executa una fraccio del programa)
+-pragma omp parallel  private(i,x) (per cada thread crea les seves variables privades i0, i1,i2 ..., in, x1, x2,...,xn)
+-pragma omp critical (Assegura que no hi hagin data -races amb el candau)  
+    lock()
+        sum += kvt + amogus + tomiT
+    unlock()
+-pragma omp atomic (Es com un lock pero hardware (instruccio de load + store que no es pot colar cap altre proces enmig))
+-pragma omp parallel private(i,x) reduction(+: sum)
+-pragma omp barrier
+
+modes de comparticio: SHARED / PRIVATE /FIRSTPRIVATE  (inicialitza amb el valor del anterior private)
+
+Si creem variables abaix de les directives -pragma omp parallel aquestes seran locals al threads i els altres no tindran acces. 
+Despres podem fer reduccions (les reduccions es poden posar a la directiva)
+
+Funcions de OMP:
+ -omp_get_thread_num: obté el identificador del thread que esta executant aquell codi 
+ -omp_get_num_threads: retorna el numero de threads en total
+ -omp_set_num_threads(numero): posa el nombre de threads al especificat, amb mes prioritat que la variable d'entorn
+ (Es pot ajustar en la execució el numero de threads OMP_GET_NUM_THREADS = 256 ./runmotherfucker)
+
+
+
+SEGONA SESSIO:
+
+#pragma omp task                             defineix una tasca en concret 
+#pragma omp taskgroup                       defineix un grup de tasques que s'hauran de sincronitzar (barrier)
+#pragma omp taskloop grainsize(x)           defineix un bucle de tasques amb granularitat x
+#pragma omp taskloop num_tasks(x)           defineix un bucle de tasques amb granularitat de x particions del bucle
+#pragma omp taskwait                        defineix un barrier per esperar a la sincronitzacio de tasques
+
+podem usar les instruccions depend per especificar les dependencies
+#pragma omp task depend(in/out/inout : variables)     especifica dependencies cap a fora o cap a dins de una llista de variables  
+#pragma      
+
+per fer una reduccio de un task group caldrà fer un TASK_REDUCTION i dins de cadascun IN_REDUCTION
+
+#pragma omp taskgroup task_reduction(+: sum)    //fa la reduccio 
+#pragma omp task in_reduction(+: sum)           //s'ha de posar, crea les variables locals sum  // inidica quines tasques contribueixen a la reduction de SUM
+
+
+TASKLOOP TE UN TASKGROUP IMPLICIT  que es pot treure amb nogroup
+#pragma omp taskloop grainsize... nogroup
+#pragma omp single nowait                                   nowait inutilitza la sincronitzacio
