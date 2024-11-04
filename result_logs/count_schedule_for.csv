@@ -1,0 +1,13 @@
+static: 497
+dynamic: 95
+guided: 46
+auto: 19
+runtime: 156
+static_chunk: 168
+dynamic_chunk: 205
+guided_chunk: 121
+auto_chunk: 0
+runtime_chunk: 0
+total: 1483
+parallel for & & 466/312 & 183/540 & 63/131 & 233/0 & 151/0 & 358\\
+for & & 497/168 & 95/205 & 46/121 & 19/0 & 156/0 & 176\\

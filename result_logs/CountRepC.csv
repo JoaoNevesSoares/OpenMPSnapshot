@@ -1,0 +1,37 @@
+loop & 45 & 5.0  & Parallel Control; Loop \\
+allocate & 4 & 5.0  & Memory Allocation and Management \\
+section & 644 & 1.0  & Parallel Control \\
+error & 5 & 5.1  & Execution Control and Debugging \\
+metadirective & 9 & 5.0  & Metaprogramming and Requirements \\
+critical & 522 & 1.0  & Synchronization \\
+for simd & 34 & 4.5  & Parallel Control; Loop; SIMD \\
+target & 2060 & 4.0  & Teams and Distribution \\
+mask & 2 & 5.1  & Execution Control and Debugging \\
+tile & 2 & 5.1  & Parallel Control; Loop \\
+single & 1091 & 1.0  & Parallel Control \\
+requires & 33 & 4.5  & Metaprogramming and Requirements \\
+taskwait & 675 & 3.1  & Synchronization; Task \\
+sections & 170 & 1.0  & Parallel Control \\
+distribute & 131 & 4.5  & Parallel Control \\
+taskgroup & 70 & 3.3  & Synchronization; Task \\
+scope & 2 & 5.1  & Execution Control and Debugging \\
+ordered & 212 & 2.0  & Synchronization \\
+taskyield & 11 & 3.4  & Synchronization; Task \\
+taskloop simd & 31 & 4.5  & Parallel Control; Loop; Task; SIMD \\
+flush & 127 & 2.0  & Synchronization \\
+for & 2928 & 1.0  & Parallel Control; Loop \\
+depobj & 7 & 5.0  & Memory Allocation and Management \\
+threadprivate & 132 & 2.0  & Data Privacy and Sharing \\
+parallel for simd & 130 & 4.5  & Parallel Control; Loop; SIMD \\
+master & 543 & 1.0  & Parallel Control \\
+barrier & 1046 & 1.0  & Synchronization \\
+atomic & 1783 & 2.0  & Synchronization \\
+teams & 183 & 4.5  & Teams and Distribution \\
+parallel sections & 105 & 1.0  & Parallel Control \\
+parallel for & 4732 & 1.0  & Parallel Control; Loop \\
+assume & 7 & 5.1  & Metaprogramming and Requirements \\
+declare & 606 & 5.0  & Metaprogramming and Requirements \\
+task & 2924 & 3.0  & Parallel Control; Task \\
+parallel & 8683 & 1.0  & Parallel Control \\
+simd & 1182 & 4.0  & Parallel Control; Loop; SIMD \\
+taskloop & 321 & 3.2  & Parallel Control; Loop; Task \\
